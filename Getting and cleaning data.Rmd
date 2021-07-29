@@ -1,0 +1,379 @@
+---
+title: "Getting and Cleaning Data"
+author: "Jose"
+date: "26/7/2021"
+output: html_document
+---
+
+
+buscar el link en mis repositorios
+
+[Link del código](https://github.com/Jose230600?tab=repositories)
+
+Nota:En el documento puede que se presenten varios errores de ortografía asi como varios caracteres extraños que puedan hacer que se pierda interpretación, por lo cual de ser así me disculpo de antemano, ya que no los corrigo debido a mi escacez de tiempo. Gracias.
+
+# Objetivo 
+
+El objetivo principal de este documento simplemente es **poner en práctica** ciertas funciones que aprendí en el curso de R programming dado en Coursera por parte de la universidad John hopkins university.
+
+# Getting Data
+
+Las dos primeras semanas del curso consisten en obtener datos basicamente, el primer tipo de archivo que se explica a leer es mas básico y común el tipo csv. 
+
+para lo anterior, primero siguiendo las ideas de reprocucibilidad explicadas en el curso, para que si alguna persona corre este código en su computadora no tenga problemas, priemro crearemos directamente una carpeta en caso de no existir, llamada *"GettingData"*, apra ello se usa la función `dir.create` y el uso de un condicional.
+
+```{r}
+if(!file.exists("GettingData")){
+  dir.create("GettingData")
+}
+```
+una ves creada la carpeta definiremos nuestro directorio de trabajo a la nueva carpeta para ello uso la funcion paste para concatenar al directorio que se tenga por default la carpeta existente y posteriormente fijar neustro directorio de trabajo como esa carpeta con `setwd()`
+
+```{r}
+  DirDeTrabajo <- paste(getwd(),"/GettingData",sep="")
+  setwd(DirDeTrabajo)
+```
+
+Ahora, ubicamos los datos a leer, para ello primero descargaremos el archivo de internet en este caso son datos de llamadas tramitadas C4 en Bogotá de la pagina de datos abiertos de BogotÃ¡, utilizamos el comando `download.file`, especificando como quieremos que se llame, despues con la funciÃ³n `dir()`comrpobamos que se encuentra descargado **Puede que tarde un poco en descargarce** 
+
+```{r,cache=TRUE}
+UrlDelArchivo <- "https://datosabiertos.bogota.gov.co/dataset/9bdf518e-b756-4865-983f-0521111fbcd1/resource/30d65a8b-d0ed-4e95-977e-0d7cc2ea89ef/download/llamadastramitadas-c4-bogota_numerounicodeseguridadyemergencias-nuse_linea-123-20210630.csv"
+download.file(UrlDelArchivo,destfile = "Lectura1.csv")
+dir()
+date()
+```
+Tambien por la reproducibilidad, se especifica la fecha por si en futuras descargas el archivo cambia o no se encuentra disponible
+
+Ahora podemos leer los datos con la función básica `read.csv`, donde se especifica la separación como `sep =;`; Cabe resltar también que se pudo haber utilizado la funciÃ³n `read.table()` sin embargo al ser el archivo un .csv prefiero utiliza la otra, sin mebargo `read.table` se podria utilizar para alguna lectura de un archivo `.txt`.
+
+```{r}
+Datos1 <- read.csv("Lectura1.csv",sep=";")
+head(Datos1)
+```
+
+## Leer Excel
+
+Posteriormente se enseña a leer un archivo de tipo excel, para ello simplemente se debe tener un archivo en excel a leer en el directorio de trabajo, y mediante el paquete `xlsx`se puede leer mediante la funciÃ³n `read.xlsx`, sin embargo antes de leerlo es muy importante especificar la hoja del archivo a leer asi como el rango en el que se encuentren los datos que queremos leer, en este caso leo la hoja 2, la segunda tabla que aparece, apra ello el parametro `colIndex` lo defino como 10 al encontrarce esta tabla en la columna 10 con fila 8 por ello `rowIndex` corresponde a 8 respectivamente, y especifico que leo los titulos de las columnas con `headerTRUE`. Resaltar que para evitar problemas al descargar el archivo al ser un .xlsx especificar el parametro `mode=wb`
+
+
+```{r}
+UrlDelArchivo <- "https://datosabiertos.bogota.gov.co/dataset/d451b52f-e30c-43b3-9066-3a7816638fea/resource/aef2bb5f-57f0-4eb3-a21d-b4c283b83edc/download/directorio_unico_de_establecimientos_30-jun-2020_vobo_sed.xlsx"
+download.file(UrlDelArchivo,destfile = "Lectura2.xlsx",mode='wb')
+dir()
+date()
+#install.packages("xlsx")
+library(xlsx)
+Datos2 <- read.xlsx("Lectura2.xlsx",sheetIndex=2,colIndex=10:16,rowIndex=8:28,header = TRUE)
+head(Datos2)
+```
+
+Una ves leido se podrían hacer diferentes operaciones y escribir un excel con la función `write.xlsx()`
+
+## Leer XML
+
+Posteriormente se enseÃ±o a leer .xml, apra ello se utiliza el paquete `XML` y especialmente se utiliza la función `xmlTreeParse`, sin embargo cabe resaltar que para poder aplicar tal léctura de manera correcta, debemos fijarnos en el url donde si es es de tipo **http** se puede pasar al a función `xmlTreeParse`directamente el url, sin embargo si es de tipo seguro como **https** es necesario antes utilizar el comando `GET` del paquete `httr`.
+
+AdemÃ¡s de lo anterior, en mi experiencia no he encontrado muchos archivos de tipo xml disponibles, lo más común es encontrar los cÃ³digos fuentes de pÃ¡ginas siendo de tipo html, por ello en tal caso se puede utilizar la funciÃ³n `htmlTreeParse`del mismo paquete.
+
+Finalmente se resalta que en el manejo de esta función GET, esta corresponde a un método de los 4 que se peuden hacer en el http protocolo, donde tambien se podria realizar un POST, por ello mismo se puede utilizar esta funciÃ³n especificando diferentes requisitos de lo que se queire obtener de la pagina, por ejemplo se puede especificar el parametro de `accept_json()`especificando que esperamos que los devuelva el servidor un arhivo de tipo jason, y demÃ¡s funciones relacionadas al manejo de APIS.
+
+```{r}
+#install.packages("httr")
+library(httr)
+Archivo <- GET("https://query.data.world/s/whouwt5ictwdvfdkyhl5tqnyeo3nxk")
+date()
+#install.packages("XML")
+library(XML)
+Datos3 <- xmlTreeParse(Archivo,useInternal=TRUE)
+class(Datos3)
+```
+Cabe resaltar que el anterior dataset obtenido no se puede revisar con la función `head` al no ser de tipo data.frame sino un Xml por ello toca utilizar mas funciones  del mismo paquete para poder acceder a nodos del documento especificando diferentes clases o cosas que se desen
+
+```{r}
+nodoRaiz <- xmlRoot(Datos3)
+head(nodoRaiz)
+xmlName(nodoRaiz)
+head(names(nodoRaiz))
+nodoEspecifico <- nodoRaiz[[5]]
+head(nodoEspecifico)
+ValorEspecificoDeUnNodoEspecifico <-nodoRaiz[[5]][[3]]
+ValorEspecificoDeUnNodoEspecifico
+PonerValoresDeNodosComoLineas <- xmlSApply(nodoRaiz,xmlValue)
+head(PonerValoresDeNodosComoLineas,3)
+CategoriasDeCadaNodoOTabla <- xpathSApply(nodoRaiz,"//label",xmlValue)
+head(CategoriasDeCadaNodoOTabla)
+```
+
+## Leer JSON
+
+Despues se enseña a obtener datos de tipo JSON, para ello utilizamoas el paquete `jsonlite`, y la función `fromJSON()`que convierte el url de tipo JSON en una lista de R, a la cual podemos acceder a sus elementos obteniendo diferentes data.frames. Tambien cabe resltar que de este paquete se puede vovler a escribir un archivo JSON con la función `toJSON()` donde se indica el atributo `pretty=TRUE`para hacer que se observe con llaves caracteristicas del tipo JSON
+m
+```{r}
+library(jsonlite)
+Archivo <- "https://datosabiertos.bogota.gov.co/dataset/d2ad3bde-f835-4c01-a419-53902a16d1b3/resource/d1b71ea0-6e13-4f9e-aa46-fa41c496ab16/download/parques.geojson"
+jsonData <- fromJSON(Archivo)
+data <-jsonData[[3]]
+data <-data$properties
+head(data)
+JASON <- toJSON(data,pretty = TRUE)
+```
+
+## Data Tables
+
+AL finalizar la semana 1 se enseña el manejo de las data.tables, que heredan los atributos de los data.frames, por lo que se pueden manejar de igual forma, aun que cambia un poco su manejo de expresiones, expondré estos conceptos con este ultimo data.frame que obtuve.
+
+Mediante el paquete `data.table`se accede al manejo de estas funciones, con la función `tables()`se osberva que tablas se tienen cargadas; cabe resaltar que se puede leer algun archivo directamente como data.table usando la función `fread()`que en mi experiencia es mas rápida que la básica `read.csv`aun asi estando optimizada, e incluso mas rápida que la función `read_csv`del paquete `readr`
+```{r}
+library(data.table)
+data <- data.table(data)
+class(data)
+tables()
+```
+si quisiera hace un subconujunto de los parques de estrato dos estas serian la forma igual que con un data.frame
+```{r}
+data[data$ESTRATO==2,]
+```
+para hace un subconjkunto de filas es la coma se puede omitir,ya que para una data table lo que esta a la derecha de la coma **NO SON COLUMNAS** a diferencia del data.frame, sino que despeus de la coma se puden realizar expresiones especificas como la creacion de nuevas columnas
+```{r}
+data[c(10,20)] # extrayendo 2 columnas cualquieras
+```
+```{r}
+data[,mean(SHAPE_Area)] # obteniendo area promedio
+```
+Notese como solo se pone el nombre de la columna a analizar, ya que se entende que es de la data.table
+```{r}
+data[,table(ESTRATO)] # cantidad de parques para cada estrato
+```
+```{r}
+data[,table(ESTRATO,ESTADO_CER)] # cantidad de parques para cada estrato de tipo certificado, en investigacion o no certificados
+```
+```{r}
+#creacion de nueva columna
+data[,TamanoSegunYo:= ifelse(SHAPE_Area>1000,"Grande","Pequeño")] 
+data[,c("SHAPE_Area","TamanoSegunYo"),with=FALSE]
+```
+Cabe resaltar que también se pueden relizar expresiones para la creacion de tablas `nuevacolumna:={;}`, tambien cabe resltar que para poder hacer subconjuntos de columnas toca especiicar el argumento `whith=FALSE`
+```{r}
+#calculo pro agrupación, similar a tapply de base, o groupby y summarize de dplyr.
+data[,PromedioArea:=mean(SHAPE_Area),by=ESTRATO] 
+unique(data[,c("PromedioArea","ESTRATO"),with=FALSE])
+#utilizo unique al haber registros repetidos
+```
+Notece como el area promedio de tipo rural es mayor para los estratos 6 o mas ricos de la ciudad.
+```{r}
+#Funcion .N para contar y especificacion de llave para no tener que indicar el argumento by y todo lo que se realice se hara respecto a la llave
+setkey(data,ESTRATO)
+data['5',.N] #cuantos valores para algun tipo de estrato especifico
+```
+Finalmente en cuanto a Data.Tables lo unico que no muestro es el uso de la función `merge()` en data.tables, lo cual  para ello se fija la llave para dos data.tables y se especifica esta llave por la coluna sobre la cual se queire hacer la fusion de tablas, despues es usar `merge()`directamnete con las dos data tables.
+
+## Leer De MySQL
+
+En el curso tambien se explico la conexion a bases de datos **MySql** para ello se utiliza el paquete `RMySql` pero para que este funcione adecuadamente se debe tener instalado el servidor de MySql además de definir en windows, este servidor como una variable global.
+
+```{r,echo=FALSE,results="hide"}
+ contrasena <- "Skateboards20"
+```
+
+```{r}
+library(RMySQL)
+Conexion <- dbConnect(MySQL(),user='root',password=contrasena,dbname="tienda",host='localhost')
+Conexion
+```
+Cabe resaltar que en el comando anterior especifico las cosas básicas para poder conectarce a una base de datos, en este caso una base de datos local de mi computador,donde la contraseña la defino pero no la muestro, y en codigo esa parte del codigo la elimino asi que si alguien lo usa debe especificar su propia contraseña y base de datos. 
+
+para el cual tuve siretos problemas que logre solucionar en [ProblemaRmySql](https://stackoverflow.com/questions/54099722/how-to-connect-r-to-mysql-failed-to-connect-to-database-error-plugin-caching)en lase gunda respuesta. tambien cabe resaltar que tal base de datos la cree medainte un formulario realizado en **C#**, donde depronto subo el Código.
+
+```{r}
+basesDeDatos <- dbListTables(Conexion)
+basesDeDatos
+ColumnasDeAlgunaTabla <-dbListFields(Conexion,"productos")
+ColumnasDeAlgunaTabla
+resultado <- dbGetQuery(Conexion,"SELECT * FROM tienda.productos")
+#resultado <-  dbReadTable(Conexion,"productos")#equivalente al anterior
+resultado
+dbDisconnect(Conexion)
+```
+En el código anterior,primero reviso que tablas hay en la base de datos mediante `dbListTables`, despues con `dbListFields`observo que columnas tiene alguna tabla a observar,y finalmente mediante la función `dbGetQuery()` obtengo de la conexión mediante algún comando lo que deseo, en este caso obtener la base de datos, a la cual yo aca mediante R ya puedo manejar como quiera al ser un data.frame;finalmente se realiza la desconexion de la base de datos.
+
+Cabe resaltar que en caso de no querer usar el comando SQL para Obetenr los datos se peude utilizar la función `dbReadTable`.
+ademas de ello se reslta que en ves de `dbGetQuery()`se podria utilizar `dbSendQuery()`y posteriormente ese resutlado obtenerlo con la funcion `fetch()` , y despues limpiar la query con `dbClearResult()` aplicada al objeto dato por `dbSendQuery()`.
+
+finalmente encuanto a SQL me gustaria resaltar el paquete `sqldf` el cual permite ejecutar comandos de sql directamente a un dataframe de R.
+
+
+## Leer HDF5 
+
+En el curso tambien se enseño a realizar lectura de archivos .h5, y la escritura de los mismos, donde estos archivos generalemnte es para almacenar datos que van a pesar bastante, sin embargo por esa misma razon no lo planeo realizar en este documento, ya que para leer archivos que encontre online estos pesaban minimo 2GB, y por otro lado no tengo nada pesado para almecenar de tal magnitud, solo mencionare que para ello se necesita el paquete `HDF5`done se crean los archivos con `h5createFile`,se observan los datos con `h5ls`, se escriben objetos que tengamos con `h5write` y se lee algun archivo externo con `h5read`
+
+
+
+## Leer Paginas Web
+
+Con la función `url()` podemos conectarnos a alguna página web para posteriormente leerla como texto con `readLines()` y en tal caso tocaría usar funciones de expresiones regulares, como `grep()` y demás
+
+```{r}
+Pagina <- url("http://hpv.prosperidadsocial.gov.co")
+estudio <- readLines(Pagina)
+head(estudio)
+date()
+```
+Del código anterior el resutlado que se obtiene es el código fuente de la página la cual es un html.
+
+Además cabe resaltar , que para poder usar esta función `url()`el link al que accedemos debe ser de tipo `http` si no, la conexion no se podra abrir, y en tal caso se debera utilizar el paquete `httr` anteriormente mencuionado y utilizar el método `GET`y en tal caso el objeto recogido seria un html el cual se puede utilizar mediatne la función `htmlTreeParse`del paquete `XML` similar la proceso mostrado en este documento en la seccion *leer XML* ; tambiñen cabe resaltar el uso de la función `handle`, la cual se aplicaría a un link y despues este si se pediría con `GET` esto solo para mantener el uso de cookies.
+
+## Leer Twitter
+
+Para acceder a paginas de Twitter es necesaria la creación de una API de Twitter, y una ves tenida tal applicación, twitter nos dará una clave de consumidor, una clave de consumidor secreta, además de un token y un token secreto, apartir de tales datos, se puede acceder a datos de twitter de diferentes maneras, se puede utilizar el paquete `httr`, y los paquetes `rtweet`y `twitteR`, donde en cualquier caso hay que hacer uan autentificación de los datos proveidos por la API; solo pondré los códigos para el paquete de `httr`y `rtweet`, y posteriomrente pondré algunas funciones para la consulta de datos, donde para el paquete `httr` estas consultas son algo mas *arcaicas* ya que se utilizan directamente comandos especificos que la API de twitter nos especifica en su documentanción para pedir diferentes datos ya sea seguidores, ultimos tweets y demás, a diferencia del paquete `rtweet` donde este trae ya unas funciones especificas para la realización de tales consultas, y en cuanto a `twitteR` este no lo utilizo ya que es demasiado similar a `rtweet`.
+
+Cabe resaltar que en el siguiente xodigo pongo en comentarios debido a que este proceso ya lo realice antes, lo que cabe destacar es que si es la priemra ves haciendo esta generación es necesario guardar el archivo con el token generado como RDS, para despeusp oder leerlo facilmente
+
+```{r}
+library(httr)
+#ConsumidorClave <- oauth_app("twitter", key = "ClaveDeCOnsumidor", secret = "SecretoDeClaveDeCOnsumidor")
+#token <- sign_oauth1.0(ConsumidorClave,token="Token",token_secret = "TOkenSecreto")
+#saveRDS(token, file = "twitter.rds") guardar ek archivo con el token en caso de ser la priemera ves
+token <- readRDS("twitter.rds")
+```
+
+Una ves generado el token, ya con este podemos acceder a los datos de twitter para ello en la documentacion se encuentran diferentes ejemplos para consultar con el método GET [API Twitter](https://developer.twitter.com/en/docs/twitter-api/v1)
+
+```{r}
+Bogota <- GET("https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=bogota&count=200",token)
+```
+En el comando anterior, pasamos el ejemplo de consulta respecto a el timeline o ultimos tweets de algun usuario, en ese caso notece que en el link despues del .json o comando que se observa en la página citada anteriormente de la documentación de Twitter se indica el header `?screen_name` el cual corresponde a el nombre que tiene un usario normalmente el twitter, y con `&`seguimos agregando parametros que deseemos, en este caso 200 tweets, finalmente del codigo anterior se obtiene una respuesta de twitter en formato JSON, al cual podemos acceder de manera similar a como lo explique anteriormente y poner nuestros datos en un data.frame del cual extraemos la columna text que tendria los tweets [Alcaldia de Bogota](https://twitter.com/Bogota)
+
+```{r}
+library(jsonlite)
+DatosBogota <- content(Bogota)
+DatosBogotaEnDataFrame <- fromJSON(toJSON(DatosBogota))
+head(DatosBogotaEnDataFrame$text)
+date()
+```
+usando rtweet
+```{r}
+library(rtweet)
+#token <- create_token(app= "nombreapp" ,consumer_key="",consumer_secret="",access_token="",access_secret="")
+#saveRDS(token, file = "twitterRtweet.rds") 
+tokenRtweet <- readRDS("twitterRtweet.rds")
+ olimpicos <- search_tweets("#Tokio2020",n=200,include_retwets=FALSE,token = tokenRtweet)
+ head(olimpicos$text)
+```
+Notece del código anterior, que el token es necesario crealo esepecificamente para estas funciones de rtweet, no funciona el token del paquete `httr`, además fijece como con la función `search_tweets` se obtienen 200 tweets de el numeral tokio2020 y se pone el argumento  `include_retwets=FALSE`para que solo salgan los tweets originales, seguido del token a usar.
+
+Por ultimo en cuanto a twitter hay mas funciones que  se pueden aplicar como get_friends, get_timelines(para el mismo procedimiento anterior con httr) y demás asi como comandos especificos de tipo GET para obtener algo que se desee.
+
+
+## Leer imagenes
+
+En cuanto a imagenes realmente no se enseño mucho, simplemente descargarla y mediante el paquete `jpeg` y la función `readJPEG` obtener la inforamción de una imagen de forma nativa.
+
+```{r}
+library(jpeg)
+ UDistrital <- "http://laud.udistrital.edu.co/sites/default/files/images/Escudo%20U%20Distrital.jpg"
+ download.file(UDistrital,destfile = "Distrital.jpeg",mode = "wb")
+ UD <- readJPEG("Distrital.jpeg", native=TRUE)
+```
+
+# Cleaning Data
+
+
+En cuanto a limpiar datos se nombraron ciertos procedimientos a seguir asi como otras funciones, se nombro la función `sort` la cual se le pasa un vector como argumento, el parametro `decreasing`, y el parametro `na.last=TRUE`  dando como resutlado las posiciones del vector ordenado de la manera indicada y poniendo de ultimas los NA en caso de haber, también se hablo de la funciñon `order` que utilice en el anterior proyecto,y de arrange de `plyr` o `dplyr`la cual usare mas adelante en este documento.
+
+
+En tales procedimientos se nombra **Ordenar los datos**, **Agregar Columnas** como algun id, **tratar los valores faltantes**, y para ello se nombra empezar *mirando las primeras filas de los datos*, *hacer resumenes*, *sacar cuantiles de variables cuantitivas*, *utilizar table()*, y demás procedimientos que realicé en el anterior proyecto, lo unico nuevo que se enseño fueron *Croos tabs* que aplicaré aca, siguiendo con los datos obtenidos de los parques de bogota y *flat tables*
+
+```{r}
+ TablaCruzada <- xtabs(SHAPE_Area~ESTRATO+ESTADO_CER,data=data)
+ TablaCruzada
+```
+En caso anterior muestro los valores del area del parque respecto al estrato y desagregados por su certificacion, en caso de poner otra variable, salen varias tablas como en el sigueitne código
+```{r}
+ TablaCruzadade3 <- xtabs(SHAPE_Area~ESTRATO+ESTADO_CER+TIPOPARQUE,data=data)
+ TablaCruzadade3
+```
+donde esta se puede ver de manera mas agrupada con una tabla plana con la función `ftable`
+```{r}
+ TablaPLana <-ftable(TablaCruzadade3)
+ TablaPLana 
+```
+
+Otra cosa que se resalta es el operador `%in%`el cual puede sr una ofrma mas rapida de hacer un subconjunto de algun vector por ejemplo si se quisiera sacar los registros con estrao 1 2 y 3 normalemente sería usando el operador `|`
+
+```{r}
+data[(data$ESTRATO == 1 | data$ESTRATO == 2 | data$ESTRATO == 3),]
+```
+con el operador `%in%`se realiza mas rápido 
+```{r}
+data[data$ESTRATO %in% c(1,2,3),]
+```
+Tambien se resalta la creación de variables binarias como la que ya cree de *TamanoSegunYo*(representando grande 1 y pequeño 0 podría ser)
+
+Además la creacion de variables categoricas apartir de cauntitivas como los rangos del os cuantiles a los que pertenece el area del parque:
+
+```{r}
+data[,RangoArea:=cut(SHAPE_Area,breaks = quantile(SHAPE_Area))]
+data[,c("NOMBRE_PAR","RangoArea"),with=FALSE]
+```
+
+Para el código anterior, tambien se puede realizar en caso de no desear el corte por cuantiles, el uso del a función `cut2` del paquete `Hmisc` especificandole a esta función el argumento `g=`a la cantidad de grupos que queramos.
+
+Se nos dice tambien que utilicemos varaibles de tipo factor lo cual ya realice en el proyecto anterior, en este data set se me ocurriria volver factor especialmente el ESTRATO y mirar psoteriormente algun comportamiento entre el estrato y el area.
+
+
+### Dplyr
+
+En esta parte de limpiar los datos merece una seccion por aparte este famosisimo paquete donde rapidamente utilizare las funciones directamentem, resalto que usaré el famoso *pipe* `%>%` que permite segun yo de cierta forma *conjugar* los vervos a utilizar de dplyr
+ 
+```{r}
+library(dplyr)
+# 1 convertir el objeto a una tbl_df() 
+datadplyr <- tbl_df(data) 
+datadplyr %>% #dataset a aplicar oepraciones
+  select(ESTRATO,NOMBRE_PAR,SHAPE_Area,SHAPE_Leng,)%>% # escogemos columnas con las que deseamos quedarnos
+  rename(Area=SHAPE_Area,Longitud = SHAPE_Leng)%>% # cambiamos algunos nombres 
+  filter(Area>=1000,Longitud>=100) %>% # filtramos alguans filas que deseemos, notece que no se usa el opeardor & sino solo comas, si se desea utilziar el operador | se puede utilizar con cualqueir naturaleza
+  arrange(desc(Area),desc(Longitud),NOMBRE_PAR) %>% # ordenamos los datos por area seguido de longitud y por ultimo por orden alfabetico 
+  slice(1:5) # mostramos unas 5 lineas similar al head
+```
+Notece del código que solo mostramos 5 registros y que el parque con mayor area es LA FLORIDA de estrato Rural; cabe resltar que aun asi no se utilice slice, dplyr hará que solo se musetren 10 registros como máximo, ahora continuo con el código para utilizar la combinacion `group_by` y `summarize` que básicamente funcionan como un `tapply`, cotnando además con la ventaja de agrupar directamente porm as variable, si se realizara de la ofrma tradicional, seria necesario crear otra columna que agrupara dos varibles y ahi si realizar el `tapply` de esa varaible, esto ultimo se realizaría con la función `interaction` que utilicé en el anterior proyecto.
+
+```{r}
+datadplyr <- tbl_df(data) 
+datadplyr %>% 
+  select(ESTRATO,NOMBRE_PAR,SHAPE_Area,SHAPE_Leng,ESTADO_CER)%>% 
+  rename(Area=SHAPE_Area,Longitud = SHAPE_Leng)%>% 
+  filter(Area>=1000,Longitud>=100) %>%  
+  arrange(desc(Area),desc(Longitud),NOMBRE_PAR) %>% 
+  group_by(ESTRATO,ESTADO_CER) 
+```
+notece que se muestran los mismos datos de antes, solo que sobre los datos sale un indicador de Groups indicando cuantos grupos hay; fijece que agrupamos por dos varaibles estrato y tipo de certificación habiendo 19 grupos al agrupar estas dos variables, donde cmo máximo deberian ser 21 al haber 3 tipos de ceritifacion y 7 estratos sin embargo este 19 indica que 2 combinaciones de estrato con tipo de certificacion no existen
+
+```{r}
+datadplyr <- tbl_df(data) 
+datadplyr %>% 
+  select(ESTRATO,NOMBRE_PAR,SHAPE_Area,SHAPE_Leng,ESTADO_CER)%>% 
+  rename(Area=SHAPE_Area,Longitud = SHAPE_Leng)%>% 
+  filter(Area>=1000,Longitud>=100) %>%  
+  arrange(desc(Area),desc(Longitud),NOMBRE_PAR) %>% 
+  group_by(ESTRATO,ESTADO_CER) %>%
+  summarize(PromediosAreas=mean(Area),PromediosLongitudes=mean(Longitud),CantidadRegistros=n())
+```
+Notece que la función `n()`cuenta cuantos registros hay para el grupo y es especial para elemenos de este tipo; también se resalta la función `n_distinct` que realiza la misma función de `unique` pero para `dplyr`
+
+Creo que hasta este punto a quedado claro el manejo de dplyr la unica función que faltaria es `mutate()`que simplemente crea nuevas columnas y que estas miasmas columnas que se van creando pueden ser utilizadas para crear nuevas columnas directamente en la misma línea de código donde se utilice `muatate`; otra función similar es `transmutate` que reliza lo mismo pero como salida solo nos entrega las vraibles que se crearon; también cabe resaltar que en la función select se puede colocar un argumento para sleecionar de varias columnas aquellas que tengan algu nombre especifico utilizando `ends_with` o similarres, incluso con expresiones regulares.
+
+
+## Otras cosas a tener en cuenta en la limpieza de datos
+
+Finalmente el el curso se nombran otras cosas, principalmente el manejo de expresiones regulares que ya trate en el proyecto anterior,utilizando funciones normales o del paquete `stringr` y finalmente el curso finaliza con el manejo de fechas con el paquete `lubridate`; de esto ultimo no hablaré, ya que muhcas funcioens de respecto a fechas traté en el anterior proyecto y en cuanto a lubridate lo unico que resalto es la facilidad para saber una funciión intuitivamente, ya que solo es saber como se escuentra la fecha y en sese mismo orden aplciar la función pro ejemplo la función `ymd()`  se aplicaria a una fecha que indique año mes y y dia en ese orden.
+
+Otras cosas que no trate fue `merge()`y `join()` de base de R y de dplyr respectivametne, esto porque no tengo datasets similares a unir.
+
+## Tidy data
+
+En cuanto al concepto de tidy data este se trato varias veces en el curso, sin embargo este no lo trataré principalmente a la ya bastante longitud de este documento. asi mismo como por no encontrar datos rapidamente para aplicar tales conceptos ya que el dataset que traté ya se acomoda a un tidy data según mi opinion, sin embargo nombrare algunos casos en los que no se encuentra tidy la data, y como estos se trata con el paquete  `tidyr`
+
+Encabezados son valores no nombres: esto se refiere a que por ejemplo en el dataset tratado en este proyecto, una columna mostrata el valor de la altura YA directamente respecto a certificado y estrato, entonces no seria tidy data al no haber *una columna diferente por cada observacion* , este se soluciona con la función `gather` de `tidyr` o la función `melt`de base de R haceidno que lso valores que hayan los separe respecto a las variables que hayan entonces este crearia dos varibles una que dijera varias veces el encabezado y otra con el valor,sin embargo esto no terminaria siendo aún tidy. ya que esa variable primera tendría dos variables aún por lo cual se separarian mediante `separate`.
+
+Lo anterior son algunas de las cosas otras son mas al manejo de diferentes tablas, como no tener la misma tabla repitiendo ids, sino separar las tablas y que una se quede con los ids de manera única.
